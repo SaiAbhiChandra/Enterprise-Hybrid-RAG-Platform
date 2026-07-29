@@ -1,12 +1,13 @@
 from fastapi import FastAPI
 
 from app.api.home import router as home_router
+from app.core.config import settings
 
 
 app = FastAPI(
-    title="Enterprise Hybrid RAG Platform",
-    version="1.0.0",
-    description="AI-powered Enterprise Hybrid RAG Platform"
+    title=settings.APP_NAME,
+    version=settings.APP_VERSION,
+    description="Enterprise Hybrid RAG Platform"
 )
 
 app.include_router(home_router)
