@@ -1,11 +1,22 @@
-# Python virtual environment
-venv/
-backend/venv/
-
-# Environment variables
-.env
-backend/.env
-
-# Python cache
+# Python
 __pycache__/
 *.py[cod]
+*.pyo
+
+# Virtual Environment
+venv/
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Alembic cache
+*.pyc
+
+# OS
+.DS_Store
+Thumbs.db
