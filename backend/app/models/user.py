@@ -3,6 +3,7 @@ from sqlalchemy import Integer
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import relationship
 
 from app.db.base import Base
 
@@ -36,4 +37,10 @@ class User(Base):
     is_active: Mapped[bool] = mapped_column(
         Boolean,
         default=True
+    )
+    
+    documents = relationship(
+    "Document",
+    back_populates="owner",
+    cascade="all, delete-orphan",
     )

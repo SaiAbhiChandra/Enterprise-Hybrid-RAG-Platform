@@ -10,7 +10,11 @@ class Settings(BaseSettings):
     HOST: str = "127.0.0.1"
     PORT: int = 8000
 
-    SECRET_KEY: str = "change_this_later"
+    SECRET_KEY: str
+    
+    ALGORITHM: str
+    
+    ACCESS_TOKEN_EXPIRE_MINUTES: int
 
     DATABASE_URL: str = ""
 
