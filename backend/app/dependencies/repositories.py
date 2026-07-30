@@ -13,3 +13,10 @@ from app.repositories.document_repository import (
 
 def get_document_repository():
     return DocumentRepository()
+
+from app.repositories.document_repository import (
+    DocumentRepository,
+)
+
+def get_document_repository() -> DocumentRepository:
+    return DocumentRepository()
