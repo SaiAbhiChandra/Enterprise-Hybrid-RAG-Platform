@@ -15,6 +15,14 @@ class Settings(BaseSettings):
     ALGORITHM: str
     
     ACCESS_TOKEN_EXPIRE_MINUTES: int
+    
+    QDRANT_HOST: str = "localhost"
+    
+    QDRANT_PORT: int = 6333
+
+    QDRANT_COLLECTION: str = "documents"
+
+    EMBEDDING_DIMENSION: int = 384
 
     DATABASE_URL: str = ""
 
