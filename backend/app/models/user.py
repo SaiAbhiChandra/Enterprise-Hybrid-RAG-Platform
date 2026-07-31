@@ -44,3 +44,8 @@ class User(Base):
     back_populates="owner",
     cascade="all, delete-orphan",
     )
+    
+    chunks = relationship(
+    "Chunk",
+    cascade="all, delete-orphan",
+    )

@@ -11,7 +11,9 @@ from app.repositories.document_repository import (
 from app.storage.storage_service import (
     StorageService,
 )
-
+from app.parsers.parser_service import ParserService
+from app.chunking.chunk_generator import ChunkGenerator
+from app.services.chunk_service import ChunkService
 
 class DocumentService:
 
@@ -19,9 +21,15 @@ class DocumentService:
         self,
         repository: DocumentRepository,
         storage: StorageService,
+        parser: ParserService,
+        chunk_generator: ChunkGenerator,
+        chunk_service: ChunkService,
     ):
         self.repository = repository
         self.storage = storage
+        self.parser = parser
+        self.chunk_generator = chunk_generator
+        self.chunk_service = chunk_service
 
     async def upload_document(
         self,
@@ -49,7 +57,28 @@ class DocumentService:
             document=document,
         )
 
+        # Parse the uploaded document
+        parsed_document = self.parser.parse_document(
+            stored_path,
+        )
+
+        # Generate chunks
+        chunks = self.chunk_generator.create_chunks(
+            parsed_document,
+        )
+
+        # Persist chunks
+        self.chunk_service.save_chunks(
+            db=db,
+            chunks=chunks,
+            document_id=document.id,
+            owner_id=owner_id,
+        )
+
+        # Commit once
         db.commit()
+
+        # Refresh document
         db.refresh(document)
 
         return document
