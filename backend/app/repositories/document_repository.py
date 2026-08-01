@@ -39,6 +39,18 @@ class DocumentRepository(BaseRepository[Document]):
             .filter(Document.owner_id == owner_id)
             .all()
         )
+        
+    def get_by_ids(
+        self,
+        db,
+        ids: list[int],
+    ):
+
+        return (
+            db.query(self.model)
+            .filter(self.model.id.in_(ids))
+            .all()
+        )
 
 
 document_repository = DocumentRepository()

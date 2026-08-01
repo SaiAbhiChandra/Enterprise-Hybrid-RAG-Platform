@@ -17,3 +17,15 @@ class LLMService:
         return self.provider.generate(
             prompt
         )
+        
+    def stream(
+        self,
+        prompt: str,
+    ):
+        """
+        Stream generated tokens.
+        """
+
+        return self.provider.stream(
+            prompt,
+        )

@@ -26,6 +26,13 @@ from app.vectorstores.search_repository import SearchRepository
 
 from app.retrieval.retriever import Retriever
 
+from app.chat.service import ChatService
+from app.llm.prompt_builder import PromptBuilder
+from app.retrieval.context_builder import ContextBuilder
+
+from app.llm.service import LLMService
+from app.llm.providers.ollama_provider import OllamaProvider
+
 
 # -----------------------------
 # Core Services
@@ -143,3 +150,22 @@ def get_document_service() -> DocumentService:
         chunk_service=get_chunk_service(),
         embedding_pipeline=get_embedding_pipeline_service(),
     )
+    
+def get_llm_service() -> LLMService:
+    """
+    Returns the configured LLM service.
+    """
+    return LLMService(
+        provider=OllamaProvider(),
+    )
+    
+def get_chat_service() -> ChatService:
+
+    return ChatService(
+        retriever=get_retriever(),
+        prompt_builder=PromptBuilder(),
+        context_builder=ContextBuilder(),
+        llm=get_llm_service(),
+        document_repository=get_document_repository(),
+    )
+    
