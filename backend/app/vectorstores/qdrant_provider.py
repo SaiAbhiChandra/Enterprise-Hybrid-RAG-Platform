@@ -9,6 +9,7 @@ from app.vectorstores.base import VectorStoreProvider
 from app.vectorstores.qdrant_client import (
     get_qdrant_client,
 )
+from qdrant_client.models import NearestQuery
 
 
 class QdrantProvider(VectorStoreProvider):
@@ -69,11 +70,16 @@ class QdrantProvider(VectorStoreProvider):
         limit=5,
     ):
 
-        return self.client.search(
+        response = self.client.query_points(
             collection_name=self.collection,
-            query_vector=vector,
+            query=NearestQuery(
+                nearest=vector,
+            ),
             limit=limit,
+            with_payload=True,
         )
+
+        return response.points
 
     def delete(
         self,

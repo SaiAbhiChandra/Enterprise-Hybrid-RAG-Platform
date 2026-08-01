@@ -37,3 +37,20 @@ class ChunkRepository(BaseRepository[Chunk]):
             db.refresh(chunk)
 
         return chunks
+    
+    def get_by_document_id(
+        self,
+        db: Session,
+        document_id: int,
+    ) -> list[Chunk]:
+
+        return (
+            db.query(Chunk)
+            .filter(
+                Chunk.document_id == document_id
+            )
+            .order_by(
+                Chunk.chunk_index
+            )
+            .all()
+        )

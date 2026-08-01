@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+import app.db.models  # noqa: F401
 
 from app.api.home import router as home_router
 from app.api.v1.api import api_router

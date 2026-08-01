@@ -23,11 +23,11 @@ class DOCXParser(BaseParser):
         text = "\n".join(paragraphs)
 
         return DocumentContent(
-    text=text,
-    page_count=document.page_count,
-    source=file_path.name,
-    metadata={
-        "file_type": "docx",
-        "filename": file_path.name,
-        },
-    )
+            text=text,
+            page_count=document.page_count,
+            source=file_path.name,
+            metadata={
+                "file_type": "docx",
+                "filename": file_path.name,
+                },
+            )
