@@ -1,31 +1,40 @@
-import Sidebar from "../components/layout/Sidebar";
-import Topbar from "../components/layout/Topbar";
+import type { ReactNode } from "react";
 
-type Props = {
-  children: React.ReactNode;
-};
+import Sidebar from "../components/layout/Sidebar";
+import Header from "../components/layout/Header";
+
+interface MainLayoutProps {
+    children: ReactNode;
+}
 
 export default function MainLayout({
-  children,
-}: Props) {
+    children,
+}: MainLayoutProps) {
 
-  return (
-    <div className="flex h-screen bg-slate-950 text-white">
+    return (
 
-      <Sidebar />
+        <div className="flex h-screen overflow-hidden bg-slate-50">
 
-      <div className="flex flex-col flex-1">
+            <Sidebar />
 
-        <Topbar />
+            <div className="flex min-w-0 flex-1 flex-col">
 
-        <main className="flex-1 overflow-auto p-8">
+                <Header />
 
-          {children}
+                <main className="flex-1 overflow-y-auto">
 
-        </main>
+                    <div className="mx-auto w-full max-w-[1440px] px-8 py-8">
 
-      </div>
+                        {children}
 
-    </div>
-  );
+                    </div>
+
+                </main>
+
+            </div>
+
+        </div>
+
+    );
+
 }

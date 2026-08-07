@@ -13,37 +13,46 @@ from app.security.oauth2 import oauth2_scheme
 def get_current_user(
     token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
-) -> User:
+):
 
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-    )
+    print("\n==============================")
+    print("TOKEN RECEIVED:")
+    print(token)
 
     try:
-
         payload = verify_token(token)
+
+        print("PAYLOAD:")
+        print(payload)
 
         user_id = payload.get("sub")
         email = payload.get("email")
 
-        if user_id is None:
-            raise credentials_exception
+        print("USER ID:", user_id)
+        print("EMAIL:", email)
 
-        token_data = TokenPayload(
-            sub=user_id,
-            email=email,
+    except Exception as e:
+        print("JWT ERROR:", repr(e))
+        raise HTTPException(
+            status_code=401,
+            detail="Could not validate credentials",
         )
-
-    except JWTError:
-        raise credentials_exception
 
     user = user_repository.get_by_id(
         db,
-        int(token_data.sub),
+        int(user_id),
     )
 
+    print("DB USER:", user)
+
     if user is None:
-        raise credentials_exception
+        print("USER NOT FOUND")
+        raise HTTPException(
+            status_code=401,
+            detail="Could not validate credentials",
+        )
+
+    print("AUTH SUCCESS")
+    print("==============================\n")
 
     return user

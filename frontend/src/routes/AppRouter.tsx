@@ -6,29 +6,37 @@ import {
 
 import LoginPage from "../pages/Login/LoginPage";
 import RegisterPage from "../pages/Register/RegisterPage";
-
 import Dashboard from "../pages/Dashboard/Dashboard";
 import UploadPage from "../pages/Upload/UploadPage";
 import DocumentsPage from "../pages/Documents/DocumentsPage";
+import ChatPage from "../pages/Chat/ChatPage";
+import SettingsPage from "../pages/Settings/SettingsPage";
 
 import MainLayout from "../layouts/MainLayout";
 import ProtectedRoute from "./ProtectedRoute";
 
-import ChatPage from "../pages/Chat/ChatPage";
-import SettingsPage from "../pages/Settings/SettingsPage";
+type LayoutProps = {
+    children: React.ReactNode;
+};
 
 function ProtectedLayout({
     children,
-}: {
-    children: React.ReactNode;
-}) {
+}: LayoutProps) {
+
     return (
+
         <ProtectedRoute>
+
             <MainLayout>
+
                 {children}
+
             </MainLayout>
+
         </ProtectedRoute>
+
     );
+
 }
 
 export default function AppRouter() {
@@ -39,7 +47,7 @@ export default function AppRouter() {
 
             <Routes>
 
-                {/* Public Routes */}
+                {/* Public */}
 
                 <Route
                     path="/login"
@@ -51,31 +59,15 @@ export default function AppRouter() {
                     element={<RegisterPage />}
                 />
 
-                {/* Protected Routes */}
+                {/* Protected */}
 
                 <Route
                     path="/"
                     element={
                         <ProtectedLayout>
+
                             <Dashboard />
-                        </ProtectedLayout>
-                    }
-                />
 
-                <Route
-                    path="/upload"
-                    element={
-                        <ProtectedLayout>
-                            <UploadPage />
-                        </ProtectedLayout>
-                    }
-                />
-
-                <Route
-                    path="/documents"
-                    element={
-                        <ProtectedLayout>
-                            <DocumentsPage />
                         </ProtectedLayout>
                     }
                 />
@@ -84,7 +76,31 @@ export default function AppRouter() {
                     path="/chat"
                     element={
                         <ProtectedLayout>
+
                             <ChatPage />
+
+                        </ProtectedLayout>
+                    }
+                />
+
+                <Route
+                    path="/upload"
+                    element={
+                        <ProtectedLayout>
+
+                            <UploadPage />
+
+                        </ProtectedLayout>
+                    }
+                />
+
+                <Route
+                    path="/documents"
+                    element={
+                        <ProtectedLayout>
+
+                            <DocumentsPage />
+
                         </ProtectedLayout>
                     }
                 />
@@ -93,7 +109,9 @@ export default function AppRouter() {
                     path="/settings"
                     element={
                         <ProtectedLayout>
+
                             <SettingsPage />
+
                         </ProtectedLayout>
                     }
                 />

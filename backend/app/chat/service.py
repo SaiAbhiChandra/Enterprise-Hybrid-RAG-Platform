@@ -1,7 +1,7 @@
 from app.llm.service import LLMService
 from app.llm.prompt_builder import PromptBuilder
 from app.retrieval.context_builder import ContextBuilder
-from app.retrieval.retriever import Retriever
+from app.retrieval.retrieval_service import RetrievalService
 from app.repositories.document_repository import DocumentRepository
 from app.core.config import settings
 from sqlalchemy.orm import Session
@@ -21,13 +21,13 @@ class ChatService:
 
     def __init__(
         self,
-        retriever,
+        retrieval_service: RetrievalService,
         prompt_builder,
         context_builder,
         llm,
         document_repository,
     ):
-        self.retriever = retriever
+        self.retrieval_service = retrieval_service
         self.prompt_builder = prompt_builder
         self.context_builder = context_builder
         self.llm = llm
@@ -39,8 +39,9 @@ class ChatService:
         request: ChatRequest,
     ) -> ChatResponse:
 
-        retrieval = self.retriever.retrieve(
-            request.question,
+        retrieval = self.retrieval_service.retrieve(
+            db=db,
+            query=request.question,
         )
         
         document_ids = list(
@@ -108,8 +109,9 @@ class ChatService:
         Stream AI response.
         """
 
-        retrieval = self.retriever.retrieve(
-            request.question,
+        retrieval = self.retrieval_service.retrieve(
+            db=db,
+            query=request.question,
         )
 
         context = self.context_builder.build(

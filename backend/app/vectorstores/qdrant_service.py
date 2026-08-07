@@ -36,3 +36,10 @@ class QdrantService:
             vector,
             limit,
         )
+
+    def delete(
+        self,
+        ids,
+    ):
+
+        self.provider.delete(ids)

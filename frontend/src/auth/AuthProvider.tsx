@@ -21,13 +21,11 @@ export default function AuthProvider({
 
     function login(token: string) {
 
-        localStorage.setItem(
-            "token",
-            token,
-        );
+        console.log("Saving token:", token);
+
+        localStorage.setItem("token", token);
 
         setToken(token);
-
     }
 
     function logout() {

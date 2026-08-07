@@ -2,22 +2,23 @@ from app.dependencies.services import get_retriever
 
 retriever = get_retriever()
 
-results = retriever.retrieve(
+response = retriever.retrieve(
     "How can I apply for PNB?"
 )
 
 print("=" * 80)
 
-print("Results:", len(results))
+print("Query:", response.query)
+print("Results:", len(response.chunks))
 
 print("=" * 80)
 
-for result in results:
+for chunk in response.chunks:
 
-    print(result.score)
+    print(chunk.score)
 
-    print(result.payload["chunk_index"])
+    print(chunk.chunk_index)
 
-    print(result.payload["text"][:250])
+    print(chunk.text[:250])
 
     print("-" * 80)

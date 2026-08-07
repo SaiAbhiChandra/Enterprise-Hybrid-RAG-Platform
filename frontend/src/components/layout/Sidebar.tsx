@@ -1,102 +1,121 @@
-import { NavLink, useNavigate } from "react-router-dom";
+import {
+    Brain,
+    FileText,
+    Home,
+    LogOut,
+    MessageSquare,
+    Settings,
+    Upload,
+} from "lucide-react";
 
-import { useAuth } from "../../auth/useAuth";
+import { NavLink } from "react-router-dom";
+
+const menu = [
+    { title: "Dashboard", icon: Home, path: "/" },
+    { title: "AI Chat", icon: MessageSquare, path: "/chat" },
+    { title: "Upload", icon: Upload, path: "/upload" },
+    { title: "Documents", icon: FileText, path: "/documents" },
+    { title: "Settings", icon: Settings, path: "/settings" },
+];
 
 export default function Sidebar() {
-    const navigate = useNavigate();
-
-    const { logout } = useAuth();
-
-    function handleLogout() {
-        logout();
-        navigate("/login");
-    }
-
-    const menuItem =
-        "block w-full rounded-lg px-4 py-3 transition";
-
-    const active =
-        "bg-indigo-600 text-white";
-
-    const inactive =
-        "text-slate-300 hover:bg-slate-800";
-
     return (
-        <aside className="w-72 bg-slate-900 border-r border-slate-800 flex flex-col">
+        <aside className="flex h-screen w-64 flex-col border-r border-slate-200 bg-white">
 
-            <div className="p-6 border-b border-slate-800">
+            <div className="border-b border-slate-200 px-6 py-7">
 
-                <h1 className="text-2xl font-bold">
+                <div className="flex items-center gap-3">
 
-                    Enterprise RAG
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-600 text-white">
 
-                </h1>
+                        <Brain size={22} />
 
-                <p className="text-sm text-slate-400 mt-2">
+                    </div>
 
-                    AI Knowledge Platform
+                    <div>
 
-                </p>
+                        <h2 className="text-lg font-bold text-slate-900">
+                            Enterprise AI
+                        </h2>
+
+                        <p className="text-xs text-slate-500">
+                            Hybrid RAG Platform
+                        </p>
+
+                    </div>
+
+                </div>
 
             </div>
 
-            <nav className="flex-1 p-4 space-y-2">
+            <nav className="flex-1 px-4 py-6">
 
-                <NavLink
-                    to="/"
-                    end
-                    className={({ isActive }) =>
-                        `${menuItem} ${isActive ? active : inactive}`
-                    }
-                >
-                    🏠 Dashboard
-                </NavLink>
+                <p className="mb-4 px-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    Workspace
+                </p>
 
-                <NavLink
-                    to="/upload"
-                    className={({ isActive }) =>
-                        `${menuItem} ${isActive ? active : inactive}`
-                    }
-                >
-                    📤 Upload
-                </NavLink>
+                <div className="space-y-2">
 
-                <NavLink
-                    to="/documents"
-                    className={({ isActive }) =>
-                        `${menuItem} ${isActive ? active : inactive}`
-                    }
-                >
-                    📄 Documents
-                </NavLink>
+                    {menu.map((item) => {
 
-                <NavLink
-                    to="/chat"
-                    className={({ isActive }) =>
-                        `${menuItem} ${isActive ? active : inactive}`
-                    }
-                >
-                    💬 Chat
-                </NavLink>
+                        const Icon = item.icon;
 
-                <NavLink
-                    to="/settings"
-                    className={({ isActive }) =>
-                        `${menuItem} ${isActive ? active : inactive}`
-                    }
-                >
-                    ⚙️ Settings
-                </NavLink>
+                        return (
+
+                            <NavLink
+                                key={item.path}
+                                to={item.path}
+                                className={({ isActive }) =>
+                                    `flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all ${
+                                        isActive
+                                            ? "bg-indigo-50 text-indigo-700"
+                                            : "text-slate-600 hover:bg-slate-100"
+                                    }`
+                                }
+                            >
+
+                                <Icon size={19} />
+
+                                {item.title}
+
+                            </NavLink>
+
+                        );
+
+                    })}
+
+                </div>
 
             </nav>
 
-            <div className="border-t border-slate-800 p-4">
+            <div className="border-t border-slate-200 p-5">
 
-                <button
-                    onClick={handleLogout}
-                    className="w-full rounded-lg bg-red-600 px-4 py-3 text-white hover:bg-red-700 transition"
-                >
-                    🚪 Logout
+                <div className="mb-5 flex items-center gap-3">
+
+                    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-indigo-600 text-white font-semibold">
+                        S
+                    </div>
+
+                    <div>
+
+                        <h3 className="text-sm font-semibold text-slate-900">
+                            Sai Abhi
+                        </h3>
+
+                        <p className="text-xs text-slate-500">
+                            AI Engineer
+                        </p>
+
+                    </div>
+
+                </div>
+
+                <button className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 py-3 text-sm font-medium hover:bg-slate-100">
+
+                    <LogOut size={18} />
+
+                    Logout
+
                 </button>
 
             </div>

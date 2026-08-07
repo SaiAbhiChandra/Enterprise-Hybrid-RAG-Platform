@@ -1,3 +1,5 @@
+from functools import lru_cache
+
 from app.dependencies.repositories import (
     get_user_repository,
     get_document_repository,
@@ -25,6 +27,15 @@ from app.vectorstores.qdrant_service import QdrantService
 from app.vectorstores.search_repository import SearchRepository
 
 from app.retrieval.retriever import Retriever
+from app.retrieval.sparse_retriever import SparseRetriever
+from app.retrieval.retrieval_service import RetrievalService
+
+from app.reranking.cross_encoder_provider import CrossEncoderProvider
+from app.reranking.reranker_service import RerankerService
+
+from app.context.deduplicator import ChunkDeduplicator
+from app.context.merger import ContextMerger
+from app.context.optimizer import ContextOptimizer
 
 from app.chat.service import ChatService
 from app.llm.prompt_builder import PromptBuilder
@@ -71,7 +82,16 @@ def get_chunk_service() -> ChunkService:
 # -----------------------------
 # Embeddings
 # -----------------------------
+#
+# @lru_cache: these functions are called once per incoming request
+# (FastAPI resolves Depends(...) fresh on every call). Without
+# caching, every chat/upload request would reload the sentence-
+# transformer model weights from disk and re-initialize the Qdrant
+# collection from scratch -- multi-second latency added to every
+# single request. Caching turns these into process-wide singletons,
+# built once on first use and reused for the life of the server.
 
+@lru_cache(maxsize=1)
 def get_embedding_service() -> EmbeddingService:
     return EmbeddingService(
         provider=SentenceTransformerProvider(),
@@ -82,6 +102,7 @@ def get_embedding_service() -> EmbeddingService:
 # Vector Store
 # -----------------------------
 
+@lru_cache(maxsize=1)
 def get_vector_store_service() -> QdrantService:
     service = QdrantService(
         provider=QdrantProvider(),
@@ -121,6 +142,54 @@ def get_retriever() -> Retriever:
     )
 
 
+def get_sparse_retriever() -> SparseRetriever:
+    return SparseRetriever(
+        chunk_repository=get_chunk_repository(),
+    )
+
+
+def get_context_merger() -> ContextMerger:
+    return ContextMerger()
+
+
+def get_chunk_deduplicator() -> ChunkDeduplicator:
+    return ChunkDeduplicator()
+
+
+def get_context_optimizer() -> ContextOptimizer:
+    return ContextOptimizer()
+
+
+# -----------------------------
+# Reranking
+# -----------------------------
+#
+# @lru_cache for the same reason as the embedding model above --
+# cross-encoder weights should load once per process, not once per
+# request.
+
+@lru_cache(maxsize=1)
+def get_reranker_provider() -> CrossEncoderProvider:
+    return CrossEncoderProvider()
+
+
+def get_reranker_service() -> RerankerService:
+    return RerankerService(
+        provider=get_reranker_provider(),
+    )
+
+
+def get_retrieval_service() -> RetrievalService:
+    return RetrievalService(
+        retriever=get_retriever(),
+        sparse_retriever=get_sparse_retriever(),
+        merger=get_context_merger(),
+        deduplicator=get_chunk_deduplicator(),
+        reranker=get_reranker_service(),
+        optimizer=get_context_optimizer(),
+    )
+
+
 # -----------------------------
 # User/Auth
 # -----------------------------
@@ -149,8 +218,11 @@ def get_document_service() -> DocumentService:
         chunk_generator=get_chunk_generator(),
         chunk_service=get_chunk_service(),
         embedding_pipeline=get_embedding_pipeline_service(),
+        chunk_repository=get_chunk_repository(),
+        vector_store=get_vector_store_service(),
     )
-    
+
+
 def get_llm_service() -> LLMService:
     """
     Returns the configured LLM service.
@@ -158,14 +230,14 @@ def get_llm_service() -> LLMService:
     return LLMService(
         provider=OllamaProvider(),
     )
-    
+
+
 def get_chat_service() -> ChatService:
 
     return ChatService(
-        retriever=get_retriever(),
+        retrieval_service=get_retrieval_service(),
         prompt_builder=PromptBuilder(),
         context_builder=ContextBuilder(),
         llm=get_llm_service(),
         document_repository=get_document_repository(),
     )
-    

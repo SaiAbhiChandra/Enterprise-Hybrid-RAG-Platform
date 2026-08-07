@@ -1,3 +1,4 @@
+from sqlalchemy import desc, func, select
 from sqlalchemy.orm import Session
 
 from app.models.chunk import Chunk
@@ -54,3 +55,38 @@ class ChunkRepository(BaseRepository[Chunk]):
             )
             .all()
         )
+
+    def search_fulltext(
+        self,
+        db: Session,
+        query: str,
+        limit: int = 5,
+    ) -> list[tuple[Chunk, float]]:
+        """
+        Keyword/lexical search over chunk text using Postgres full-text
+        search. Backs the sparse half of hybrid retrieval.
+
+        `websearch_to_tsquery` is used (rather than `plainto_tsquery`)
+        because it tolerates raw, unsanitized user input -- quotes,
+        "OR", "-exclude" -- the same way a search engine query box
+        does, instead of raising on malformed syntax.
+
+        Returns (Chunk, rank) tuples so the caller can decide how to
+        use the rank -- we deliberately don't attach it to the Chunk
+        model, since rank is a property of *this query*, not of the
+        chunk itself.
+        """
+
+        ts_query = func.websearch_to_tsquery("english", query)
+        rank = func.ts_rank_cd(Chunk.search_vector, ts_query).label(
+            "rank"
+        )
+
+        statement = (
+            select(Chunk, rank)
+            .where(Chunk.search_vector.op("@@")(ts_query))
+            .order_by(desc(rank))
+            .limit(limit)
+        )
+
+        return list(db.execute(statement).all())

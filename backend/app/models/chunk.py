@@ -1,4 +1,5 @@
-from sqlalchemy import ForeignKey, Integer, Text
+from sqlalchemy import Computed, ForeignKey, Integer, Text
+from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -43,6 +44,19 @@ class Chunk(Base, TimestampMixin):
     token_count: Mapped[int] = mapped_column(
         Integer,
         default=0,
+    )
+
+    # Postgres-generated tsvector column, kept in sync automatically
+    # by the database on every insert/update -- the application layer
+    # never has to remember to update it. Backs the sparse/keyword
+    # half of hybrid retrieval (see SparseRetriever).
+    search_vector: Mapped[str | None] = mapped_column(
+        TSVECTOR,
+        Computed(
+            "to_tsvector('english', text)",
+            persisted=True,
+        ),
+        nullable=True,
     )
 
     document = relationship(
