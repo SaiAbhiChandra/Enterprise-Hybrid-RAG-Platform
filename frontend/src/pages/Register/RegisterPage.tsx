@@ -1,48 +1,34 @@
 import { useState } from "react";
-
 import { Link, useNavigate } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 
 import { register } from "../../api/auth";
+import FusionMark from "../../components/brand/FusionMark";
 
 export default function RegisterPage() {
-
     const navigate = useNavigate();
 
     const [fullName, setFullName] = useState("");
-
     const [email, setEmail] = useState("");
-
     const [password, setPassword] = useState("");
-
     const [loading, setLoading] = useState(false);
-
     const [error, setError] = useState("");
 
-    async function handleRegister(
-        e: React.FormEvent
-    ) {
+    async function handleRegister(e: React.FormEvent) {
         e.preventDefault();
 
         setLoading(true);
-
         setError("");
 
         try {
-
             await register({
-
                 full_name: fullName,
-
                 email,
-
                 password,
-
             });
 
             navigate("/login");
-
         } catch (err: any) {
-
             const detail = err.response?.data?.detail;
 
             if (Array.isArray(detail)) {
@@ -52,110 +38,97 @@ export default function RegisterPage() {
             } else {
                 setError("Registration failed.");
             }
-
         } finally {
-
             setLoading(false);
-
         }
     }
 
     return (
+        <div className="flex min-h-screen items-center justify-center bg-bg px-4">
+            <div className="w-full max-w-sm">
+                <div className="mb-8 flex flex-col items-center">
+                    <FusionMark size={36} />
+                    <h1 className="mt-4 font-display text-2xl font-semibold tracking-tight text-text">
+                        Create your account
+                    </h1>
+                    <p className="mt-1 text-sm text-text-muted">
+                        Get started with Cortex
+                    </p>
+                </div>
 
-        <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+                <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm">
+                    {error && (
+                        <div className="mb-4 rounded-lg bg-danger/10 px-3 py-2.5 text-sm text-danger">
+                            {error}
+                        </div>
+                    )}
 
-            <div className="w-full max-w-md rounded-xl bg-slate-900 p-8 shadow-xl">
+                    <form onSubmit={handleRegister} className="space-y-3.5">
+                        <div>
+                            <label className="mb-1.5 block text-xs font-medium text-text-muted">
+                                Full name
+                            </label>
+                            <input
+                                type="text"
+                                value={fullName}
+                                onChange={(e) => setFullName(e.target.value)}
+                                placeholder="Jane Doe"
+                                required
+                                className="w-full rounded-lg border border-border bg-bg px-3 py-2.5 text-sm text-text outline-none transition focus:border-accent/50"
+                            />
+                        </div>
 
-                <h1 className="text-3xl font-bold text-white">
+                        <div>
+                            <label className="mb-1.5 block text-xs font-medium text-text-muted">
+                                Email
+                            </label>
+                            <input
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="you@company.com"
+                                required
+                                className="w-full rounded-lg border border-border bg-bg px-3 py-2.5 text-sm text-text outline-none transition focus:border-accent/50"
+                            />
+                        </div>
 
-                    Create Account
+                        <div>
+                            <label className="mb-1.5 block text-xs font-medium text-text-muted">
+                                Password
+                            </label>
+                            <input
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="••••••••"
+                                required
+                                className="w-full rounded-lg border border-border bg-bg px-3 py-2.5 text-sm text-text outline-none transition focus:border-accent/50"
+                            />
+                        </div>
 
-                </h1>
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="flex w-full items-center justify-center gap-2 rounded-lg bg-accent py-2.5 text-sm font-medium text-white transition hover:bg-accent-hover disabled:opacity-60"
+                        >
+                            {loading && (
+                                <Loader2 size={14} className="animate-spin" />
+                            )}
+                            {loading ? "Creating account…" : "Create account"}
+                        </button>
+                    </form>
+                </div>
 
-                <p className="text-slate-400 mt-2">
-
-                    Register a new user
-
-                </p>
-
-                {error && (
-
-                    <div className="mt-4 rounded bg-red-700 p-3 text-white">
-
-                        {error}
-
-                    </div>
-
-                )}
-
-                <form
-                    onSubmit={handleRegister}
-                    className="mt-8 space-y-5"
-                >
-
-                    <input
-                        type="text"
-                        placeholder="Full Name"
-                        value={fullName}
-                        onChange={(e) =>
-                            setFullName(e.target.value)
-                        }
-                        className="w-full rounded-lg bg-slate-800 p-3 text-white outline-none"
-                        required
-                    />
-
-                    <input
-                        type="email"
-                        placeholder="Email"
-                        value={email}
-                        onChange={(e) =>
-                            setEmail(e.target.value)
-                        }
-                        className="w-full rounded-lg bg-slate-800 p-3 text-white outline-none"
-                        required
-                    />
-
-                    <input
-                        type="password"
-                        placeholder="Password"
-                        value={password}
-                        onChange={(e) =>
-                            setPassword(e.target.value)
-                        }
-                        className="w-full rounded-lg bg-slate-800 p-3 text-white outline-none"
-                        required
-                    />
-
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full rounded-lg bg-indigo-600 py-3 text-white hover:bg-indigo-700 transition"
-                    >
-
-                        {loading
-                            ? "Registering..."
-                            : "Register"}
-
-                    </button>
-
-                </form>
-
-                <p className="mt-6 text-center text-slate-400">
-
-                    Already have an account?
-
+                <p className="mt-5 text-center text-sm text-text-muted">
+                    Already have an account?{" "}
                     <Link
                         to="/login"
-                        className="ml-2 text-indigo-400"
+                        className="font-medium text-accent hover:text-accent-hover"
                     >
-                        Login
+                        Log in
                     </Link>
-
                 </p>
-
             </div>
-
         </div>
-
     );
 }

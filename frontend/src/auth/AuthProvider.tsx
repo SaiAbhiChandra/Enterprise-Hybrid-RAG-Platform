@@ -1,66 +1,65 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { AuthContext } from "./AuthContext";
+import { getMe, type UserProfile } from "../api/users";
 
 type Props = {
-
     children: React.ReactNode;
-
 };
 
-export default function AuthProvider({
-
-    children,
-
-}: Props) {
-
-    const [token, setToken] =
-    useState<string | null>(
+export default function AuthProvider({ children }: Props) {
+    const [token, setToken] = useState<string | null>(
         localStorage.getItem("token"),
     );
 
-    function login(token: string) {
+    const [user, setUser] = useState<UserProfile | null>(null);
 
-        console.log("Saving token:", token);
+    useEffect(() => {
+        if (!token) {
+            setUser(null);
+            return;
+        }
 
-        localStorage.setItem("token", token);
+        let cancelled = false;
 
-        setToken(token);
+        getMe()
+            .then((profile) => {
+                if (!cancelled) setUser(profile);
+            })
+            .catch(() => {
+                // A failed profile fetch will also trigger the 401
+                // interceptor in api/client.ts if the token was
+                // actually invalid, which redirects to /login --
+                // nothing extra to do here.
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [token]);
+
+    function login(newToken: string) {
+        localStorage.setItem("token", newToken);
+        setToken(newToken);
     }
 
     function logout() {
-
-        localStorage.removeItem(
-            "token",
-        );
-
+        localStorage.removeItem("token");
         setToken(null);
-
+        setUser(null);
     }
 
     return (
-
         <AuthContext.Provider
-
             value={{
-
                 token,
-
+                user,
                 login,
-
                 logout,
-
-                isAuthenticated:
-                    !!token,
-
+                isAuthenticated: !!token,
             }}
-
         >
-
             {children}
-
         </AuthContext.Provider>
-
     );
-
 }

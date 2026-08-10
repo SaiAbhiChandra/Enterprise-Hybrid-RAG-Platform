@@ -1,192 +1,193 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 
-import { askQuestion, streamQuestion } from "../../api/chat";
-import type { Source } from "../../api/chat";
-
-import ChatLayout from "../../components/chat/ChatLayout";
-import ChatHeader from "../../components/chat/ChatHeader";
-import ChatSidebar from "../../components/chat/ChatSidebar";
-import ChatMessages from "../../components/chat/ChatMessages";
-import ChatInput from "../../components/chat/ChatInput";
-
-interface Message {
-    id: number;
-    role: "user" | "assistant";
-    content: string;
-    timestamp: string;
-    sources?: Source[];
-}
+import MessageBubble, {
+    type ChatMessage,
+} from "../../components/chat/MessageBubble";
+import Composer from "../../components/chat/Composer";
+import EmptyState from "../../components/chat/EmptyState";
+import { getConversation } from "../../api/conversations";
+import { streamChat } from "../../api/chat";
+import type { AppShellContext } from "../../components/layout/AppShell";
 
 export default function ChatPage() {
+    const { conversationId } = useParams();
+    const navigate = useNavigate();
+    const { refreshConversations } =
+        useOutletContext<AppShellContext>();
 
-    const [messages, setMessages] =
-        useState<Message[]>([]);
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
+    const [loadingHistory, setLoadingHistory] = useState(false);
+    const [streaming, setStreaming] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    const [question, setQuestion] =
-        useState("");
+    const bottomRef = useRef<HTMLDivElement>(null);
+    const abortRef = useRef<AbortController | null>(null);
 
-    const [loading, setLoading] =
-        useState(false);
+    // Load message history when opening an existing conversation.
+    useEffect(() => {
+        if (!conversationId) {
+            setMessages([]);
+            return;
+        }
 
-    function currentTime() {
+        setLoadingHistory(true);
+        setError(null);
 
-        return new Date().toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-        });
+        getConversation(Number(conversationId))
+            .then((data) => {
+                setMessages(
+                    data.messages.map((m) => ({
+                        id: m.id,
+                        role: m.role,
+                        content: m.content,
+                        sources: m.sources,
+                    })),
+                );
+            })
+            .catch(() => {
+                setError("Couldn't load this conversation.");
+            })
+            .finally(() => setLoadingHistory(false));
+    }, [conversationId]);
 
+    useEffect(() => {
+        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [messages]);
+
+    function handleStop() {
+        abortRef.current?.abort();
+        setStreaming(false);
     }
 
-    async function sendMessage(customQuestion?: string) {
+    async function handleSend(question: string) {
+        setError(null);
 
-        const finalQuestion =
-            customQuestion ?? question.trim();
+        const userMessage: ChatMessage = {
+            id: `user-${Date.now()}`,
+            role: "user",
+            content: question,
+        };
 
-        if (!finalQuestion || loading)
-            return;
+        const assistantId = `assistant-${Date.now()}`;
 
-        const assistantId = Date.now() + 1;
-
-        setQuestion("");
-
-        setMessages(prev => [
+        setMessages((prev) => [
             ...prev,
-            {
-                id: Date.now(),
-                role: "user",
-                content: finalQuestion,
-                timestamp: currentTime(),
-            },
+            userMessage,
             {
                 id: assistantId,
                 role: "assistant",
                 content: "",
-                timestamp: currentTime(),
-                sources: [],
+                streaming: true,
             },
         ]);
 
-        setLoading(true);
+        setStreaming(true);
+
+        const controller = new AbortController();
+        abortRef.current = controller;
+
+        let currentConversationId = conversationId
+            ? Number(conversationId)
+            : null;
 
         try {
+            await streamChat(
+                question,
+                currentConversationId,
+                {
+                    onMeta: (meta) => {
+                        if (!currentConversationId) {
+                            currentConversationId = meta.conversation_id;
+                            // Move from /chat to /chat/:id without
+                            // remounting -- the messages we already
+                            // have in state stay put.
+                            navigate(`/chat/${meta.conversation_id}`, {
+                                replace: true,
+                            });
+                        }
 
-            await streamQuestion(
-                finalQuestion,
-                (chunk) => {
-
-                    setMessages(prev =>
-                        prev.map(message =>
-                            message.id === assistantId
-                                ? {
-                                      ...message,
-                                      content:
-                                          message.content + chunk,
-                                  }
-                                : message
-                        )
-                    );
-
-                }
+                        setMessages((prev) =>
+                            prev.map((m) =>
+                                m.id === assistantId
+                                    ? { ...m, sources: meta.sources }
+                                    : m,
+                            ),
+                        );
+                    },
+                    onToken: (text) => {
+                        setMessages((prev) =>
+                            prev.map((m) =>
+                                m.id === assistantId
+                                    ? { ...m, content: m.content + text }
+                                    : m,
+                            ),
+                        );
+                    },
+                    onDone: () => {
+                        setMessages((prev) =>
+                            prev.map((m) =>
+                                m.id === assistantId
+                                    ? { ...m, streaming: false }
+                                    : m,
+                            ),
+                        );
+                        refreshConversations();
+                    },
+                },
+                controller.signal,
             );
+        } catch (err) {
+            if ((err as Error).name !== "AbortError") {
+                setError(
+                    "Something went wrong generating a response. Please try again.",
+                );
+            }
 
-            const ragResponse =
-                await askQuestion(finalQuestion);
-
-            setMessages(prev =>
-                prev.map(message =>
-                    message.id === assistantId
-                        ? {
-                              ...message,
-                              sources: ragResponse.sources,
-                          }
-                        : message
-                )
+            setMessages((prev) =>
+                prev.map((m) =>
+                    m.id === assistantId ? { ...m, streaming: false } : m,
+                ),
             );
-
+        } finally {
+            setStreaming(false);
         }
-
-        catch {
-
-            setMessages(prev =>
-                prev.map(message =>
-                    message.id === assistantId
-                        ? {
-                              ...message,
-                              content:
-                                  "Unable to connect to Enterprise AI.",
-                          }
-                        : message
-                )
-            );
-
-        }
-
-        finally {
-
-            setLoading(false);
-
-        }
-
     }
 
-    function handlePrompt(prompt: string) {
-
-        setQuestion(prompt);
-
-        sendMessage(prompt);
-
-    }
+    const showEmptyState = !conversationId && messages.length === 0;
 
     return (
+        <div className="flex h-full flex-col">
+            <div className="flex-1 overflow-y-auto">
+                {loadingHistory ? (
+                    <div className="flex h-full items-center justify-center text-sm text-text-muted">
+                        Loading conversation…
+                    </div>
+                ) : showEmptyState ? (
+                    <EmptyState onPick={handleSend} />
+                ) : (
+                    <div className="mx-auto max-w-[900px] py-4">
+                        {messages.map((message) => (
+                            <MessageBubble key={message.id} message={message} />
+                        ))}
 
-        <div className="h-[calc(100vh-170px)]">
+                        {error && (
+                            <p className="px-4 py-2 text-sm text-danger">
+                                {error}
+                            </p>
+                        )}
 
-            <ChatLayout
+                        <div ref={bottomRef} />
+                    </div>
+                )}
+            </div>
 
-                header={
-
-                    <ChatHeader />
-
-                }
-
-                sidebar={
-
-                    <ChatSidebar />
-
-                }
-
-                input={
-
-                    <ChatInput
-
-                        value={question}
-
-                        loading={loading}
-
-                        onChange={setQuestion}
-
-                        onSend={() => sendMessage()}
-
-                    />
-
-                }
-
-            >
-
-                <ChatMessages
-
-                    messages={messages}
-
-                    loading={loading}
-
-                    onPromptClick={handlePrompt}
-
-                />
-
-            </ChatLayout>
-
+            <Composer
+                onSend={handleSend}
+                onStop={handleStop}
+                streaming={streaming}
+                disabled={loadingHistory}
+            />
         </div>
-
     );
-
 }

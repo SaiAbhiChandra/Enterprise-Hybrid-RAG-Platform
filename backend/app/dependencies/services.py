@@ -6,6 +6,8 @@ from app.dependencies.repositories import (
 )
 
 from app.repositories.chunk_repository import ChunkRepository
+from app.repositories.conversation_repository import ConversationRepository
+from app.repositories.message_repository import MessageRepository
 
 from app.services.user_service import UserService
 from app.services.auth_service import AuthenticationService
@@ -38,6 +40,7 @@ from app.context.merger import ContextMerger
 from app.context.optimizer import ContextOptimizer
 
 from app.chat.service import ChatService
+from app.chat.conversation_service import ConversationService
 from app.llm.prompt_builder import PromptBuilder
 from app.retrieval.context_builder import ContextBuilder
 
@@ -67,6 +70,14 @@ def get_chunk_generator() -> ChunkGenerator:
 
 def get_chunk_repository() -> ChunkRepository:
     return ChunkRepository()
+
+
+def get_conversation_repository() -> ConversationRepository:
+    return ConversationRepository()
+
+
+def get_message_repository() -> MessageRepository:
+    return MessageRepository()
 
 
 # -----------------------------
@@ -240,4 +251,13 @@ def get_chat_service() -> ChatService:
         context_builder=ContextBuilder(),
         llm=get_llm_service(),
         document_repository=get_document_repository(),
+        conversation_repository=get_conversation_repository(),
+        message_repository=get_message_repository(),
+    )
+
+
+def get_conversation_service() -> ConversationService:
+    return ConversationService(
+        conversation_repository=get_conversation_repository(),
+        message_repository=get_message_repository(),
     )

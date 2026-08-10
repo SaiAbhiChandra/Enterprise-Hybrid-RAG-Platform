@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 
 import { login } from "../../api/auth";
 import { useAuth } from "../../auth/useAuth";
+import FusionMark from "../../components/brand/FusionMark";
 
 export default function LoginPage() {
     const navigate = useNavigate();
@@ -10,31 +12,24 @@ export default function LoginPage() {
     const { login: saveToken } = useAuth();
 
     const [email, setEmail] = useState("");
-
     const [password, setPassword] = useState("");
-
     const [loading, setLoading] = useState(false);
-
     const [error, setError] = useState("");
 
-    async function handleLogin(
-        e: React.FormEvent
-    ) {
+    async function handleLogin(e: React.FormEvent) {
         e.preventDefault();
 
         setError("");
-
         setLoading(true);
 
         try {
             const response = await login({
                 username: email,
-                password: password,
+                password,
             });
 
             saveToken(response.access_token);
-
-            navigate("/");
+            navigate("/chat");
         } catch (err: any) {
             const detail = err.response?.data?.detail;
 
@@ -43,7 +38,7 @@ export default function LoginPage() {
             } else if (typeof detail === "string") {
                 setError(detail);
             } else {
-                setError("Login failed.");
+                setError("Login failed. Check your credentials.");
             }
         } finally {
             setLoading(false);
@@ -51,76 +46,77 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="flex min-h-screen items-center justify-center bg-bg px-4">
+            <div className="w-full max-w-sm">
+                <div className="mb-8 flex flex-col items-center">
+                    <FusionMark size={36} />
+                    <h1 className="mt-4 font-display text-2xl font-semibold tracking-tight text-text">
+                        Welcome back
+                    </h1>
+                    <p className="mt-1 text-sm text-text-muted">
+                        Log in to Cortex
+                    </p>
+                </div>
 
-            <div className="w-full max-w-md rounded-xl bg-slate-900 p-8 shadow-xl">
+                <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm">
+                    {error && (
+                        <div className="mb-4 rounded-lg bg-danger/10 px-3 py-2.5 text-sm text-danger">
+                            {error}
+                        </div>
+                    )}
 
-                <h1 className="text-3xl font-bold text-white">
-                    Welcome Back
-                </h1>
+                    <form onSubmit={handleLogin} className="space-y-3.5">
+                        <div>
+                            <label className="mb-1.5 block text-xs font-medium text-text-muted">
+                                Email
+                            </label>
+                            <input
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="you@company.com"
+                                required
+                                className="w-full rounded-lg border border-border bg-bg px-3 py-2.5 text-sm text-text outline-none transition focus:border-accent/50"
+                            />
+                        </div>
 
-                <p className="text-slate-400 mt-2">
-                    Login to Enterprise Hybrid RAG
-                </p>
+                        <div>
+                            <label className="mb-1.5 block text-xs font-medium text-text-muted">
+                                Password
+                            </label>
+                            <input
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="••••••••"
+                                required
+                                className="w-full rounded-lg border border-border bg-bg px-3 py-2.5 text-sm text-text outline-none transition focus:border-accent/50"
+                            />
+                        </div>
 
-                {error && (
-                    <div className="mt-4 rounded bg-red-700 p-3 text-white">
-                        {error}
-                    </div>
-                )}
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="flex w-full items-center justify-center gap-2 rounded-lg bg-accent py-2.5 text-sm font-medium text-white transition hover:bg-accent-hover disabled:opacity-60"
+                        >
+                            {loading && (
+                                <Loader2 size={14} className="animate-spin" />
+                            )}
+                            {loading ? "Logging in…" : "Log in"}
+                        </button>
+                    </form>
+                </div>
 
-                <form
-                    onSubmit={handleLogin}
-                    className="mt-8 space-y-5"
-                >
-
-                    <input
-                        type="email"
-                        placeholder="Email"
-                        value={email}
-                        onChange={(e) =>
-                            setEmail(e.target.value)
-                        }
-                        className="w-full rounded-lg bg-slate-800 p-3 text-white outline-none"
-                        required
-                    />
-
-                    <input
-                        type="password"
-                        placeholder="Password"
-                        value={password}
-                        onChange={(e) =>
-                            setPassword(e.target.value)
-                        }
-                        className="w-full rounded-lg bg-slate-800 p-3 text-white outline-none"
-                        required
-                    />
-
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full rounded-lg bg-indigo-600 py-3 text-white hover:bg-indigo-700 transition"
-                    >
-                        {loading ? "Logging In..." : "Login"}
-                    </button>
-
-                </form>
-
-                <p className="mt-6 text-center text-slate-400">
-
-                    Don't have an account?
-
+                <p className="mt-5 text-center text-sm text-text-muted">
+                    Don't have an account?{" "}
                     <Link
                         to="/register"
-                        className="ml-2 text-indigo-400"
+                        className="font-medium text-accent hover:text-accent-hover"
                     >
-                        Register
+                        Sign up
                     </Link>
-
                 </p>
-
             </div>
-
         </div>
     );
 }

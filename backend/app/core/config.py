@@ -35,6 +35,13 @@ class Settings(BaseSettings):
     LLM_PROVIDER: str = "ollama"
     OLLAMA_MODEL: str = "llama3.1:8b"
 
+    # Minimum cross-encoder relevance score (post-sigmoid, 0-1) for
+    # retrieved context to actually be handed to the LLM. Below this,
+    # the top retrieved chunk isn't a real match for the question, so
+    # the context is dropped and the model answers from general
+    # knowledge instead of being confused by irrelevant chunks.
+    RAG_RELEVANCE_THRESHOLD: float = 0.5
+
     OPENAI_API_KEY: str = ""
     GEMINI_API_KEY: str = ""
 

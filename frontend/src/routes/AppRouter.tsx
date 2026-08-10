@@ -1,125 +1,51 @@
 import {
     BrowserRouter,
-    Routes,
+    Navigate,
     Route,
+    Routes,
 } from "react-router-dom";
 
 import LoginPage from "../pages/Login/LoginPage";
 import RegisterPage from "../pages/Register/RegisterPage";
-import Dashboard from "../pages/Dashboard/Dashboard";
-import UploadPage from "../pages/Upload/UploadPage";
 import DocumentsPage from "../pages/Documents/DocumentsPage";
 import ChatPage from "../pages/Chat/ChatPage";
 import SettingsPage from "../pages/Settings/SettingsPage";
 
-import MainLayout from "../layouts/MainLayout";
+import AppShell from "../components/layout/AppShell";
 import ProtectedRoute from "./ProtectedRoute";
 
-type LayoutProps = {
-    children: React.ReactNode;
-};
-
-function ProtectedLayout({
-    children,
-}: LayoutProps) {
-
-    return (
-
-        <ProtectedRoute>
-
-            <MainLayout>
-
-                {children}
-
-            </MainLayout>
-
-        </ProtectedRoute>
-
-    );
-
-}
-
 export default function AppRouter() {
-
     return (
-
         <BrowserRouter>
-
             <Routes>
+                {/* Public routes */}
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterPage />} />
 
-                {/* Public */}
-
+                {/* Protected app shell -- sidebar persists, only the
+                    Outlet content below changes between routes. */}
                 <Route
-                    path="/login"
-                    element={<LoginPage />}
-                />
-
-                <Route
-                    path="/register"
-                    element={<RegisterPage />}
-                />
-
-                {/* Protected */}
-
-                <Route
-                    path="/"
                     element={
-                        <ProtectedLayout>
-
-                            <Dashboard />
-
-                        </ProtectedLayout>
+                        <ProtectedRoute>
+                            <AppShell />
+                        </ProtectedRoute>
                     }
-                />
+                >
+                    <Route
+                        path="/"
+                        element={<Navigate to="/chat" replace />}
+                    />
+                    <Route path="/chat" element={<ChatPage />} />
+                    <Route
+                        path="/chat/:conversationId"
+                        element={<ChatPage />}
+                    />
+                    <Route path="/documents" element={<DocumentsPage />} />
+                    <Route path="/settings" element={<SettingsPage />} />
+                </Route>
 
-                <Route
-                    path="/chat"
-                    element={
-                        <ProtectedLayout>
-
-                            <ChatPage />
-
-                        </ProtectedLayout>
-                    }
-                />
-
-                <Route
-                    path="/upload"
-                    element={
-                        <ProtectedLayout>
-
-                            <UploadPage />
-
-                        </ProtectedLayout>
-                    }
-                />
-
-                <Route
-                    path="/documents"
-                    element={
-                        <ProtectedLayout>
-
-                            <DocumentsPage />
-
-                        </ProtectedLayout>
-                    }
-                />
-
-                <Route
-                    path="/settings"
-                    element={
-                        <ProtectedLayout>
-
-                            <SettingsPage />
-
-                        </ProtectedLayout>
-                    }
-                />
-
+                <Route path="*" element={<Navigate to="/chat" replace />} />
             </Routes>
-
         </BrowserRouter>
-
     );
-
 }
