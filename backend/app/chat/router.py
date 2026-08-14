@@ -58,7 +58,7 @@ def stream_chat(
     finishes, without waiting for the full answer to be generated.
     """
 
-    conversation, sources, token_generator = service.stream_chat(
+    conversation, user_message, sources, token_generator = service.stream_chat(
         db=db,
         request=request,
         owner_id=current_user.id,
@@ -69,6 +69,7 @@ def stream_chat(
         meta = {
             "conversation_id": conversation.id,
             "conversation_title": conversation.title,
+            "user_message_id": user_message.id,
             "sources": [source.model_dump() for source in sources],
         }
 

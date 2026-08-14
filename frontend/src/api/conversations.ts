@@ -53,3 +53,12 @@ export async function renameConversation(
 export async function deleteConversation(id: number): Promise<void> {
     await api.delete(`/conversations/${id}`);
 }
+
+export async function truncateMessagesFrom(
+    conversationId: number,
+    messageId: number,
+): Promise<void> {
+    await api.delete(
+        `/conversations/${conversationId}/messages/from/${messageId}`,
+    );
+}

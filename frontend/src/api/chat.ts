@@ -4,6 +4,7 @@ import type { Source } from "./conversations";
 export interface ChatMetaEvent {
     conversation_id: number;
     conversation_title: string;
+    user_message_id: number;
     sources: Source[];
 }
 

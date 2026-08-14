@@ -6,8 +6,12 @@ import MessageBubble, {
 } from "../../components/chat/MessageBubble";
 import Composer from "../../components/chat/Composer";
 import EmptyState from "../../components/chat/EmptyState";
-import { getConversation } from "../../api/conversations";
+import {
+    getConversation,
+    truncateMessagesFrom,
+} from "../../api/conversations";
 import { streamChat } from "../../api/chat";
+import { uploadDocument } from "../../api/documents";
 import type { AppShellContext } from "../../components/layout/AppShell";
 
 export default function ChatPage() {
@@ -19,15 +23,31 @@ export default function ChatPage() {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [loadingHistory, setLoadingHistory] = useState(false);
     const [streaming, setStreaming] = useState(false);
+    const [attaching, setAttaching] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const bottomRef = useRef<HTMLDivElement>(null);
     const abortRef = useRef<AbortController | null>(null);
 
+    // When we navigate to a freshly-created conversation ourselves
+    // (see onMeta below), the resulting conversationId change would
+    // otherwise trigger the history-loading effect below, which
+    // fetches from the server and overwrites the in-progress
+    // streaming message with whatever's persisted so far -- which is
+    // only the user's message, since the assistant's reply hasn't
+    // finished generating (and therefore hasn't been saved) yet.
+    // This flag lets that one specific navigation skip the reload.
+    const skipNextLoadRef = useRef(false);
+
     // Load message history when opening an existing conversation.
     useEffect(() => {
         if (!conversationId) {
             setMessages([]);
+            return;
+        }
+
+        if (skipNextLoadRef.current) {
+            skipNextLoadRef.current = false;
             return;
         }
 
@@ -60,28 +80,11 @@ export default function ChatPage() {
         setStreaming(false);
     }
 
-    async function handleSend(question: string) {
-        setError(null);
-
-        const userMessage: ChatMessage = {
-            id: `user-${Date.now()}`,
-            role: "user",
-            content: question,
-        };
-
-        const assistantId = `assistant-${Date.now()}`;
-
-        setMessages((prev) => [
-            ...prev,
-            userMessage,
-            {
-                id: assistantId,
-                role: "assistant",
-                content: "",
-                streaming: true,
-            },
-        ]);
-
+    async function runStream(
+        question: string,
+        userMessageLocalId: string,
+        assistantId: string,
+    ) {
         setStreaming(true);
 
         const controller = new AbortController();
@@ -99,6 +102,7 @@ export default function ChatPage() {
                     onMeta: (meta) => {
                         if (!currentConversationId) {
                             currentConversationId = meta.conversation_id;
+                            skipNextLoadRef.current = true;
                             // Move from /chat to /chat/:id without
                             // remounting -- the messages we already
                             // have in state stay put.
@@ -108,11 +112,23 @@ export default function ChatPage() {
                         }
 
                         setMessages((prev) =>
-                            prev.map((m) =>
-                                m.id === assistantId
-                                    ? { ...m, sources: meta.sources }
-                                    : m,
-                            ),
+                            prev.map((m) => {
+                                if (m.id === userMessageLocalId) {
+                                    // Swap the temporary local id for
+                                    // the real database id, so this
+                                    // message can be edited/truncated
+                                    // correctly even without a page
+                                    // reload in between.
+                                    return {
+                                        ...m,
+                                        id: meta.user_message_id,
+                                    };
+                                }
+                                if (m.id === assistantId) {
+                                    return { ...m, sources: meta.sources };
+                                }
+                                return m;
+                            }),
                         );
                     },
                     onToken: (text) => {
@@ -154,6 +170,99 @@ export default function ChatPage() {
         }
     }
 
+    async function handleSend(question: string) {
+        setError(null);
+
+        const userMessageId = `user-${Date.now()}`;
+        const assistantId = `assistant-${Date.now()}`;
+
+        setMessages((prev) => [
+            ...prev,
+            {
+                id: userMessageId,
+                role: "user",
+                content: question,
+            },
+            {
+                id: assistantId,
+                role: "assistant",
+                content: "",
+                streaming: true,
+            },
+        ]);
+
+        await runStream(question, userMessageId, assistantId);
+    }
+
+    async function handleEditMessage(
+        messageId: string | number,
+        newContent: string,
+    ) {
+        setError(null);
+
+        const index = messages.findIndex((m) => m.id === messageId);
+        if (index === -1) return;
+
+        // Truncate on the server first -- the edited message and
+        // everything after it (its old answer, and anything sent
+        // since) no longer applies once the question has changed.
+        if (conversationId && typeof messageId === "number") {
+            try {
+                await truncateMessagesFrom(
+                    Number(conversationId),
+                    messageId,
+                );
+            } catch {
+                setError("Couldn't edit that message. Please try again.");
+                return;
+            }
+        }
+
+        const userMessageId = `user-edit-${Date.now()}`;
+        const assistantId = `assistant-${Date.now()}`;
+
+        setMessages((prev) => [
+            ...prev.slice(0, index),
+            {
+                id: userMessageId,
+                role: "user",
+                content: newContent,
+            },
+            {
+                id: assistantId,
+                role: "assistant",
+                content: "",
+                streaming: true,
+            },
+        ]);
+
+        await runStream(newContent, userMessageId, assistantId);
+    }
+
+    async function handleAttach(file: File) {
+        setAttaching(true);
+        setError(null);
+
+        try {
+            await uploadDocument(file);
+
+            setMessages((prev) => [
+                ...prev,
+                {
+                    id: `system-${Date.now()}`,
+                    role: "system",
+                    content: `Uploaded "${file.name}" — indexed and ready to reference.`,
+                },
+            ]);
+        } catch {
+            setError(
+                `Couldn't upload "${file.name}". Please try a different file.`,
+            );
+        } finally {
+            setAttaching(false);
+        }
+    }
+
     const showEmptyState = !conversationId && messages.length === 0;
 
     return (
@@ -168,7 +277,15 @@ export default function ChatPage() {
                 ) : (
                     <div className="mx-auto max-w-[900px] py-4">
                         {messages.map((message) => (
-                            <MessageBubble key={message.id} message={message} />
+                            <MessageBubble
+                                key={message.id}
+                                message={message}
+                                onEdit={
+                                    message.role === "user"
+                                        ? handleEditMessage
+                                        : undefined
+                                }
+                            />
                         ))}
 
                         {error && (
@@ -185,7 +302,9 @@ export default function ChatPage() {
             <Composer
                 onSend={handleSend}
                 onStop={handleStop}
+                onAttach={handleAttach}
                 streaming={streaming}
+                attaching={attaching}
                 disabled={loadingHistory}
             />
         </div>

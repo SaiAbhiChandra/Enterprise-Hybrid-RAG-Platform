@@ -116,6 +116,34 @@ class ConversationService:
 
         db.commit()
 
+    def truncate_from(
+        self,
+        db: Session,
+        conversation_id: int,
+        owner_id: int,
+        message_id: int,
+    ) -> None:
+        """
+        Deletes a message and everything after it in the
+        conversation. Used when a user edits a past message -- the
+        edited question gets resent as a fresh message afterward, so
+        the stale message and its stale answer need to go first.
+        """
+
+        conversation = self.get_owned_conversation(
+            db=db,
+            conversation_id=conversation_id,
+            owner_id=owner_id,
+        )
+
+        self.message_repository.delete_from(
+            db=db,
+            conversation_id=conversation.id,
+            from_message_id=message_id,
+        )
+
+        db.commit()
+
     @staticmethod
     def derive_title(question: str) -> str:
         """

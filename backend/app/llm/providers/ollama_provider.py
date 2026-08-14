@@ -12,7 +12,7 @@ class OllamaProvider(LLMProvider):
     def __init__(self):
 
         self.client = Client(
-            host="http://localhost:11434",
+            host=settings.OLLAMA_BASE_URL,
         )
 
         self.model = settings.OLLAMA_MODEL

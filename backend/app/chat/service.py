@@ -235,13 +235,18 @@ class ChatService:
         """
         Prepares a streaming chat turn.
 
-        Returns (conversation, sources, token_generator) rather than a
-        single generator: conversation_id and sources are both known
+        Returns (conversation, user_message, sources, token_generator)
+        rather than a single generator: conversation_id, the user
+        message's real database id, and sources are all known
         *before* the first token is generated (they come out of
-        retrieval, which runs before the LLM call), so the router can
-        send them to the client immediately as a "meta" event instead
-        of making the frontend wait for the full answer to find out
-        which conversation it's in or what was cited.
+        saving the message and running retrieval, both of which run
+        before the LLM call), so the router can send them to the
+        client immediately as a "meta" event instead of making the
+        frontend wait for the full answer. The user message's id is
+        included so the frontend can later reference this exact
+        message for editing (see the truncate-from-message endpoint),
+        even for a message sent in the current session that hasn't
+        been reloaded from the server yet.
         """
 
         conversation = self._resolve_conversation(
@@ -251,7 +256,7 @@ class ChatService:
             question=request.question,
         )
 
-        self._save_message(
+        user_message = self._save_message(
             db=db,
             conversation_id=conversation.id,
             role="user",
@@ -293,4 +298,4 @@ class ChatService:
 
             db.commit()
 
-        return conversation, sources, token_generator()
+        return conversation, user_message, sources, token_generator()

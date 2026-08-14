@@ -14,10 +14,16 @@ services:
       POSTGRES_PASSWORD: ehrp_password
 
     ports:
-    - "5433:5432"
+      - "5433:5432"
 
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ehrp_user -d ehrp_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   redis:
     image: redis:7
@@ -27,6 +33,12 @@ services:
 
     ports:
       - "6379:6379"
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   qdrant:
     image: qdrant/qdrant
@@ -40,8 +52,76 @@ services:
     volumes:
       - qdrant_data:/qdrant/storage
 
+  backend:
+    build:
+      context: ./backend
+
+    container_name: ehrp_backend
+
+    restart: always
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+
+    ports:
+      - "8000:8000"
+
+    # Secrets (SECRET_KEY, etc.) come from backend/.env, which is
+    # gitignored and never baked into the image. The connection
+    # settings below are overridden here because inside the Docker
+    # network, services are reached by their service name
+    # (`postgres`, `qdrant`) rather than `localhost` -- whatever
+    # DATABASE_URL/QDRANT_HOST happen to be in your local .env for
+    # host-machine development gets overridden for the container.
+    env_file:
+      - ./backend/.env
+
+    environment:
+      DATABASE_URL: postgresql://ehrp_user:ehrp_password@postgres:5432/ehrp_db
+      REDIS_URL: redis://redis:6379
+      QDRANT_HOST: qdrant
+      QDRANT_PORT: 6333
+      # Ollama is expected to run on the host machine (large models,
+      # usually GPU-accelerated) rather than inside this compose
+      # stack -- host.docker.internal lets the backend container
+      # reach back out to it. Deliberately named OLLAMA_BASE_URL, not
+      # OLLAMA_HOST, to avoid colliding with Ollama's own env var of
+      # that name (see app/core/config.py for why).
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
+
+    extra_hosts:
+      # host.docker.internal resolves out of the box on Docker
+      # Desktop (Windows/Mac); this line is what makes it also
+      # resolve on Linux hosts.
+      - "host.docker.internal:host-gateway"
+
+    volumes:
+      - backend_uploads:/app/uploads
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Must be reachable from the browser, not the Docker network
+        # -- this is the backend's published host port.
+        VITE_API_BASE_URL: http://localhost:8000/api/v1
+
+    container_name: ehrp_frontend
+
+    restart: always
+
+    depends_on:
+      - backend
+
+    ports:
+      - "3000:80"
+
 volumes:
-
   postgres_data:
-
   qdrant_data:
+  backend_uploads:

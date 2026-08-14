@@ -82,6 +82,28 @@ def rename_conversation(
 
 
 @router.delete(
+    "/{conversation_id}/messages/from/{message_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def truncate_messages(
+    conversation_id: int,
+    message_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    service: ConversationService = Depends(
+        get_conversation_service,
+    ),
+):
+
+    service.truncate_from(
+        db=db,
+        conversation_id=conversation_id,
+        owner_id=current_user.id,
+        message_id=message_id,
+    )
+
+
+@router.delete(
     "/{conversation_id}",
     status_code=status.HTTP_204_NO_CONTENT,
 )
