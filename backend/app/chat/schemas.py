@@ -8,6 +8,11 @@ class ChatRequest(BaseModel):
     conversation_id: int | None = None
 
 
+class RegenerateRequest(BaseModel):
+    conversation_id: int
+    message_id: int
+
+
 class Source(BaseModel):
     document_id: int
     document_name: str

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Check, Copy, FileCheck2, Pencil } from "lucide-react";
+import { Check, Copy, FileCheck2, Pencil, RefreshCw } from "lucide-react";
 
 import FusionMark from "../brand/FusionMark";
 import SourcesPanel from "./SourcesPanel";
@@ -18,9 +18,14 @@ export type ChatMessage = {
 type Props = {
     message: ChatMessage;
     onEdit?: (messageId: string | number, newContent: string) => void;
+    onRegenerate?: (messageId: string | number) => void;
 };
 
-export default function MessageBubble({ message, onEdit }: Props) {
+export default function MessageBubble({
+    message,
+    onEdit,
+    onRegenerate,
+}: Props) {
     const [copied, setCopied] = useState(false);
     const [editing, setEditing] = useState(false);
     const [draft, setDraft] = useState(message.content);
@@ -170,6 +175,16 @@ export default function MessageBubble({ message, onEdit }: Props) {
                                 <Copy size={13} />
                             )}
                         </button>
+
+                        {onRegenerate && (
+                            <button
+                                onClick={() => onRegenerate(message.id)}
+                                title="Regenerate response"
+                                className="rounded-md p-1.5 text-text-muted hover:bg-surface-alt hover:text-text"
+                            >
+                                <RefreshCw size={13} />
+                            </button>
+                        )}
                     </div>
                 )}
             </div>

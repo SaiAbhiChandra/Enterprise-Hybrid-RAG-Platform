@@ -39,3 +39,28 @@ class MessageRepository(BaseRepository[Message]):
             Message.conversation_id == conversation_id,
             Message.id >= from_message_id,
         ).delete(synchronize_session=False)
+
+    def get_preceding_user_message(
+        self,
+        db: Session,
+        conversation_id: int,
+        before_message_id: int,
+    ) -> Message | None:
+        """
+        Finds the most recent user message before a given message id
+        within a conversation. Backs "regenerate": regenerating an
+        assistant reply needs the original question it was answering,
+        without creating a duplicate user message the way a naive
+        "just resend the question" approach would.
+        """
+
+        return (
+            db.query(Message)
+            .filter(
+                Message.conversation_id == conversation_id,
+                Message.role == "user",
+                Message.id < before_message_id,
+            )
+            .order_by(Message.id.desc())
+            .first()
+        )

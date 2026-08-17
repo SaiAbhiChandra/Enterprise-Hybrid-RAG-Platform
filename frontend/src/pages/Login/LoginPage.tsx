@@ -54,7 +54,7 @@ export default function LoginPage() {
                         Welcome back
                     </h1>
                     <p className="mt-1 text-sm text-text-muted">
-                        Log in to Cortex
+                        Log in to YourChat
                     </p>
                 </div>
 

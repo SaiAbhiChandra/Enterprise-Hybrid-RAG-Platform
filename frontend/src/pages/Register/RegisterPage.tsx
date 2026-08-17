@@ -52,7 +52,7 @@ export default function RegisterPage() {
                         Create your account
                     </h1>
                     <p className="mt-1 text-sm text-text-muted">
-                        Get started with Cortex
+                        Get started with YourChat
                     </p>
                 </div>
 

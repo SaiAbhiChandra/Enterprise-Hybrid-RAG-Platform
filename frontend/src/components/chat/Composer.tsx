@@ -113,7 +113,7 @@ export default function Composer({
             </div>
 
             <p className="mx-auto mt-2 max-w-[760px] text-center text-[11px] text-text-muted">
-                Cortex can make mistakes. Check important information against
+                YourChat can make mistakes. Check important information against
                 your source documents.
             </p>
         </div>

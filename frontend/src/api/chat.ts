@@ -11,37 +11,34 @@ export interface ChatMetaEvent {
 export interface StreamChatHandlers {
     onMeta?: (meta: ChatMetaEvent) => void;
     onToken?: (text: string) => void;
-    onDone?: () => void;
+    onDone?: (assistantMessageId: number | null) => void;
 }
 
 /**
- * Consumes the backend's Server-Sent Events chat stream.
+ * Shared consumer for the backend's Server-Sent Events chat stream,
+ * used by both streamChat and regenerateChat -- they hit different
+ * endpoints but produce identical event shapes.
  *
  * Uses the native fetch + ReadableStream API rather than axios --
  * axios's streaming support doesn't work reliably in the browser,
  * only in Node. Events arrive as blank-line-delimited
- * "event: X\ndata: Y" blocks per the SSE spec; the backend sends
- * `meta` once immediately (conversation id + citations), then
- * `token` per generated token, then `done`.
+ * "event: X\ndata: Y" blocks per the SSE spec.
  */
-export async function streamChat(
-    question: string,
-    conversationId: number | null,
+async function consumeSSE(
+    path: string,
+    body: Record<string, unknown>,
     handlers: StreamChatHandlers,
     signal?: AbortSignal,
 ): Promise<void> {
     const token = localStorage.getItem("token");
 
-    const response = await fetch(`${baseURL}/chat/stream`, {
+    const response = await fetch(`${baseURL}${path}`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({
-            question,
-            conversation_id: conversationId,
-        }),
+        body: JSON.stringify(body),
         signal,
     });
 
@@ -81,6 +78,34 @@ export async function streamChat(
     }
 }
 
+export async function streamChat(
+    question: string,
+    conversationId: number | null,
+    handlers: StreamChatHandlers,
+    signal?: AbortSignal,
+): Promise<void> {
+    return consumeSSE(
+        "/chat/stream",
+        { question, conversation_id: conversationId },
+        handlers,
+        signal,
+    );
+}
+
+export async function regenerateChat(
+    conversationId: number,
+    messageId: number,
+    handlers: StreamChatHandlers,
+    signal?: AbortSignal,
+): Promise<void> {
+    return consumeSSE(
+        "/chat/regenerate",
+        { conversation_id: conversationId, message_id: messageId },
+        handlers,
+        signal,
+    );
+}
+
 function processEvent(
     rawEvent: string,
     handlers: StreamChatHandlers,
@@ -115,7 +140,7 @@ function processEvent(
     } else if (eventName === "token") {
         handlers.onToken?.(parsed.text as string);
     } else if (eventName === "done") {
-        handlers.onDone?.();
+        handlers.onDone?.(parsed.assistant_message_id ?? null);
     }
 }
 

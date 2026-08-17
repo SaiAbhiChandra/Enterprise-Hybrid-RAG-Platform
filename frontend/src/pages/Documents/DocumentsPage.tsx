@@ -65,7 +65,7 @@ export default function DocumentsPage() {
                     Documents
                 </h1>
                 <p className="mt-1 text-sm text-text-muted">
-                    Upload the documents Cortex should answer questions from.
+                    Upload the documents YourChat should answer questions from.
                 </p>
 
                 <div className="mt-6">

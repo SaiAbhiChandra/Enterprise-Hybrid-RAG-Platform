@@ -104,7 +104,7 @@ export default function ConversationSidebar({
             <div className="flex items-center gap-2 px-4 pt-5 pb-3">
                 <FusionMark size={26} />
                 <span className="font-display text-[17px] font-semibold tracking-tight">
-                    Cortex
+                    YourChat
                 </span>
             </div>
 

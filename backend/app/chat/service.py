@@ -288,7 +288,7 @@ class ChatService:
 
             full_answer = "".join(collected)
 
-            self._save_message(
+            assistant_message = self._save_message(
                 db=db,
                 conversation_id=conversation.id,
                 role="assistant",
@@ -298,4 +298,113 @@ class ChatService:
 
             db.commit()
 
-        return conversation, user_message, sources, token_generator()
+            result_holder["assistant_message_id"] = assistant_message.id
+
+        result_holder: dict = {}
+
+        return conversation, user_message, sources, token_generator(), result_holder
+
+    def regenerate(
+        self,
+        db: Session,
+        conversation_id: int,
+        message_id: int,
+        owner_id: int,
+    ):
+        """
+        Regenerates a specific assistant reply: deletes it (and
+        anything after it) and produces a fresh answer to the same
+        question it was originally responding to.
+
+        Deliberately does NOT reuse stream_chat/_resolve_conversation
+        with the question resent as a new ChatRequest -- that would
+        insert a second copy of the user's question into the
+        conversation. Instead this looks up the actual preceding user
+        message and answers it again, leaving conversation history
+        exactly as if the first (bad) answer had simply been redone.
+        """
+
+        conversation = self.conversation_repository.get_conversation(
+            db=db,
+            conversation_id=conversation_id,
+        )
+
+        if conversation is None or conversation.owner_id != owner_id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Conversation not found.",
+            )
+
+        target_message = self.message_repository.get_by_id(
+            db=db,
+            obj_id=message_id,
+        )
+
+        if (
+            target_message is None
+            or target_message.conversation_id != conversation.id
+            or target_message.role != "assistant"
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Message not found.",
+            )
+
+        user_message = self.message_repository.get_preceding_user_message(
+            db=db,
+            conversation_id=conversation.id,
+            before_message_id=message_id,
+        )
+
+        if user_message is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No question found to regenerate a reply for.",
+            )
+
+        self.message_repository.delete_from(
+            db=db,
+            conversation_id=conversation.id,
+            from_message_id=message_id,
+        )
+
+        db.commit()
+
+        retrieval = self.retrieval_service.retrieve(
+            db=db,
+            query=user_message.content,
+        )
+
+        sources = self._build_sources(db=db, retrieval=retrieval)
+
+        context = self._build_context(retrieval)
+
+        prompt = self.prompt_builder.build(
+            question=user_message.content,
+            context=context,
+        )
+
+        def token_generator():
+            collected = []
+
+            for token in self.llm.stream(prompt):
+                collected.append(token)
+                yield token
+
+            full_answer = "".join(collected)
+
+            assistant_message = self._save_message(
+                db=db,
+                conversation_id=conversation.id,
+                role="assistant",
+                content=full_answer,
+                sources=[source.model_dump() for source in sources],
+            )
+
+            db.commit()
+
+            result_holder["assistant_message_id"] = assistant_message.id
+
+        result_holder: dict = {}
+
+        return conversation, user_message, sources, token_generator(), result_holder

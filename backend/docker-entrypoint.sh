@@ -7,5 +7,5 @@ set -e
 echo "Running database migrations..."
 alembic upgrade head
 
-echo "Starting Cortex backend..."
+echo "Starting YourChat backend..."
 exec uvicorn app.main:app --host 0.0.0.0 --port 8000

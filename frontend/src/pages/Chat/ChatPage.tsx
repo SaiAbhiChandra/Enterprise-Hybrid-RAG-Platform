@@ -10,7 +10,7 @@ import {
     getConversation,
     truncateMessagesFrom,
 } from "../../api/conversations";
-import { streamChat } from "../../api/chat";
+import { regenerateChat, streamChat } from "../../api/chat";
 import { uploadDocument } from "../../api/documents";
 import type { AppShellContext } from "../../components/layout/AppShell";
 
@@ -140,11 +140,15 @@ export default function ChatPage() {
                             ),
                         );
                     },
-                    onDone: () => {
+                    onDone: (assistantMessageId) => {
                         setMessages((prev) =>
                             prev.map((m) =>
                                 m.id === assistantId
-                                    ? { ...m, streaming: false }
+                                    ? {
+                                          ...m,
+                                          streaming: false,
+                                          id: assistantMessageId ?? m.id,
+                                      }
                                     : m,
                             ),
                         );
@@ -239,6 +243,96 @@ export default function ChatPage() {
         await runStream(newContent, userMessageId, assistantId);
     }
 
+    async function handleRegenerate(messageId: string | number) {
+        // Regenerating requires the assistant message's real database
+        // id, which only exists once it's finished streaming at
+        // least once -- a message id is still a temporary local
+        // string for the few hundred ms it's actively streaming, so
+        // there's nothing meaningful to regenerate yet.
+        if (!conversationId || typeof messageId !== "number") return;
+
+        setError(null);
+
+        const index = messages.findIndex((m) => m.id === messageId);
+        if (index === -1) return;
+
+        const localPlaceholderId = `assistant-regen-${Date.now()}`;
+
+        setMessages((prev) => {
+            const next = [...prev];
+            next[index] = {
+                id: localPlaceholderId,
+                role: "assistant",
+                content: "",
+                streaming: true,
+            };
+            return next;
+        });
+
+        setStreaming(true);
+
+        const controller = new AbortController();
+        abortRef.current = controller;
+
+        try {
+            await regenerateChat(
+                Number(conversationId),
+                messageId,
+                {
+                    onMeta: (meta) => {
+                        setMessages((prev) =>
+                            prev.map((m) =>
+                                m.id === localPlaceholderId
+                                    ? { ...m, sources: meta.sources }
+                                    : m,
+                            ),
+                        );
+                    },
+                    onToken: (text) => {
+                        setMessages((prev) =>
+                            prev.map((m) =>
+                                m.id === localPlaceholderId
+                                    ? { ...m, content: m.content + text }
+                                    : m,
+                            ),
+                        );
+                    },
+                    onDone: (assistantMessageId) => {
+                        setMessages((prev) =>
+                            prev.map((m) =>
+                                m.id === localPlaceholderId
+                                    ? {
+                                          ...m,
+                                          streaming: false,
+                                          id: assistantMessageId ?? m.id,
+                                      }
+                                    : m,
+                            ),
+                        );
+                        refreshConversations();
+                    },
+                },
+                controller.signal,
+            );
+        } catch (err) {
+            if ((err as Error).name !== "AbortError") {
+                setError(
+                    "Something went wrong regenerating the response. Please try again.",
+                );
+            }
+
+            setMessages((prev) =>
+                prev.map((m) =>
+                    m.id === localPlaceholderId
+                        ? { ...m, streaming: false }
+                        : m,
+                ),
+            );
+        } finally {
+            setStreaming(false);
+        }
+    }
+
     async function handleAttach(file: File) {
         setAttaching(true);
         setError(null);
@@ -283,6 +377,11 @@ export default function ChatPage() {
                                 onEdit={
                                     message.role === "user"
                                         ? handleEditMessage
+                                        : undefined
+                                }
+                                onRegenerate={
+                                    message.role === "assistant"
+                                        ? handleRegenerate
                                         : undefined
                                 }
                             />

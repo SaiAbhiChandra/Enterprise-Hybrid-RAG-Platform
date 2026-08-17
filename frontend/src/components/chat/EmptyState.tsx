@@ -17,7 +17,7 @@ export default function EmptyState({ onPick }: Props) {
             <FusionMark size={40} />
 
             <h1 className="mt-4 font-display text-2xl font-semibold tracking-tight text-text">
-                Ask Cortex anything
+                Ask YourChat anything
             </h1>
 
             <p className="mt-1.5 max-w-sm text-center text-sm text-text-muted">
