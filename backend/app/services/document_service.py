@@ -113,7 +113,16 @@ class DocumentService:
             )
 
             # ----------------------------------------------------
-            # 7. Commit database transaction
+            # 7. Mark as fully processed
+            # ----------------------------------------------------
+            # Previously this never ran -- status stayed "UPLOADED"
+            # forever, even for documents that finished indexing
+            # successfully, which meant the frontend's status badge
+            # never actually reflected reality.
+            document.status = "completed"
+
+            # ----------------------------------------------------
+            # 8. Commit database transaction
             # ----------------------------------------------------
             db.commit()
 

@@ -1,0 +1,14 @@
+[
+  {
+    "question": "What is the refund policy for late requests?",
+    "expected_document": "refund_policy.pdf"
+  },
+  {
+    "question": "How do I apply for a personal loan?",
+    "expected_document": "loan_guide.docx"
+  },
+  {
+    "question": "What documents are needed to open a savings account?",
+    "expected_document": "account_opening_requirements.pdf"
+  }
+]

@@ -1,0 +1,98 @@
+[
+  {
+    "question": "What is the email address of the person listed on this document?",
+    "expected_document": "ABHI-Resume.pdf"
+  },
+  {
+    "question": "What percentage accuracy did the model achieve?",
+    "expected_document": "ABHI-Resume.pdf"
+  },
+  {
+    "question": "What certifications has this person achieved?",
+    "expected_document": "ABHI-Resume.pdf"
+  },
+  {
+    "question": "what is the deadline for online applications?",
+    "expected_document": "PNB Apllication Guidelines.pdf"
+  },
+  {
+    "question": "What happens if I put the wrong info in the online app form?",
+    "expected_document": "PNB Apllication Guidelines.pdf"
+  },
+  {
+    "question": "What format should the handwritten declaration image be in?",
+    "expected_document": "PNB Apllication Guidelines.pdf"
+  },
+  {
+    "question": "What are the different types of data annotation experience listed in this professional's summary?",
+    "expected_document": "Resume_AmazonMLDataAssociate.pdf"
+  },
+  {
+    "question": "What specific rules did you apply for transcription tasks in Telugu on GoTranscript?",
+    "expected_document": "Resume_AmazonMLDataAssociate.pdf"
+  },
+  {
+    "question": "What technologies were used for this project?",
+    "expected_document": "Resume_AmazonMLDataAssociate.pdf"
+  },
+  {
+    "question": "What is the position you're applying for at Deloitte?",
+    "expected_document": "Delloite_cover_letter.pdf"
+  },
+  {
+    "question": "Can you tell me what data visualization tools you have experience with?",
+    "expected_document": "Delloite_cover_letter.pdf"
+  },
+  {
+    "question": "What skills specifically from your experience do you think will be most useful in the onboarding operations and talent support activities at Deloitte?",
+    "expected_document": "Delloite_cover_letter.pdf"
+  },
+  {
+    "question": "What are the steps to apply online for this job?",
+    "expected_document": "PNB Apllication Guidelines.pdf"
+  },
+  {
+    "question": "What happens if I make a mistake on the online application form and want to change my details?",
+    "expected_document": "PNB Apllication Guidelines.pdf"
+  },
+  {
+    "question": "What is the recommended file type for the hand-written declaration image?",
+    "expected_document": "PNB Apllication Guidelines.pdf"
+  },
+  {
+    "question": "what is retrieval-augmented generation (rag) and how does it improve llm responses?",
+    "expected_document": "RAG_Guide_Complete.pdf"
+  },
+  {
+    "question": "What is the highest-complexity approach for querying deeply connected data mentioned in this text?",
+    "expected_document": "RAG_Guide_Complete.pdf"
+  },
+  {
+    "question": "What is the formula used to compute the fused score in Reciprocal Rank Fusion (RRF)?",
+    "expected_document": "RAG_Guide_Complete.pdf"
+  },
+  {
+    "question": "What are the dates within which candidates can apply online?",
+    "expected_document": "PNB Apllication Guidelines.pdf"
+  },
+  {
+    "question": "Will I be able to change the details in my online application form after I submit it?",
+    "expected_document": "PNB Apllication Guidelines.pdf"
+  },
+  {
+    "question": "What should be written on a white paper for the hand-written declaration image?",
+    "expected_document": "PNB Apllication Guidelines.pdf"
+  },
+  {
+    "question": "how does RAG fetch information from an external source?",
+    "expected_document": "RAG_Guide_Complete.pdf"
+  },
+  {
+    "question": "What is a way to reason over deeply connected data in graph databases?",
+    "expected_document": "RAG_Guide_Complete.pdf"
+  },
+  {
+    "question": "what is the formula for calculating the fused score in RRF?",
+    "expected_document": "RAG_Guide_Complete.pdf"
+  }
+]
